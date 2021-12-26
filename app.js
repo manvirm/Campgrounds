@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const mongoose = require('mongoose');
+
 //creates reusable code to reduce duplicating code
 const ejsMate = require('ejs-mate');
 const session = require('express-session');
@@ -11,9 +12,14 @@ const ExpressError = require('./utils/ExpressError');
 //Fake put, patch, delete method
 const methodOverride = require('method-override');
 
+const passport = require('passport');
+const LocalStrategy = require('passport-local');
+const User = require('./models/user');
+
 //require routers
-const campgrounds = require('./routes/campgrounds');
-const reviews = require('./routes/reviews');
+const userRoutes = require('./routes/users');
+const campgroundRoutes = require('./routes/campgrounds');
+const reviewRoutes = require('./routes/reviews');
 
 //this makes yelp-camp name of the database
 mongoose.connect('mongodb://localhost:27017/yelp-camp');
@@ -53,16 +59,31 @@ const sessionConfig = {
 app.use(session(sessionConfig));
 app.use(flash());
 
-//middleware to setup flash 
+app.use(passport.initialize());
+app.use(passport.session());
+//use local strategy and authenticate
+passport.use(new LocalStrategy(User.authenticate()));
+//store user in session
+passport.serializeUser(User.serializeUser());
+//get user out of session
+passport.deserializeUser(User.deserializeUser());
+
+//middleware, we have access to in every single template
 app.use((req, res, next) => {
+    res.locals.currentUser = req.user;
     res.locals.success = req.flash('success');
     res.locals.error = req.flash('error');
     next();
 })
 
+app.get('/fakeUser', async(req, res) => {
+    const user = new User({email: ''})
+})
+
 //from router folder, use the specified routes
-app.use('/campgrounds', campgrounds);
-app.use('/campgrounds/:id/reviews', reviews);
+app.use('/', userRoutes);
+app.use('/campgrounds', campgroundRoutes);
+app.use('/campgrounds/:id/reviews', reviewRoutes);
 
 
 app.get('/', (req, res) => {
