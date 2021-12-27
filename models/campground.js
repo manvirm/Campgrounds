@@ -2,9 +2,19 @@ const mongoose = require('mongoose');
 const Review = require('./reviews');
 const Schema = mongoose.Schema;
 
+const ImageSchema = new Schema({
+    url: String,
+    filename: String
+});
+
+//setup thumbnail on every single image, dont store in mongoDB
+ImageSchema.virtual('thumbnail').get(function() {
+    return this.url.replace('/upload', '/upload/w_200');
+});
+
 const CampgroundSchema = new Schema({
     title: String, 
-    image: String,
+    images: [ImageSchema],
     price: Number,
     description: String,
     location: String,
@@ -18,7 +28,7 @@ const CampgroundSchema = new Schema({
             ref: 'Review'
         }
     ]
-})
+});
 
 //Delete associated reviews after deleting campground (query middleware)
 CampgroundSchema.post('findOneAndDelete', async function(doc){
@@ -29,6 +39,6 @@ CampgroundSchema.post('findOneAndDelete', async function(doc){
             }
         })
     }
-})
+});
 
 module.exports = mongoose.model('Campground', CampgroundSchema);
