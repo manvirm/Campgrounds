@@ -1,6 +1,8 @@
 const Campground = require('../models/campground');
+const mbxGeocoding = require('@mapbox/mapbox-sdk/services/geocoding');
+const mapBoxToken = process.env.MAPBOX_TOKEN;
 const { cloudinary } = require('../cloudinary');
-
+const geocoder = mbxGeocoding({accessToken: mapBoxToken});
 module.exports.index = async (req, res) => {
     const campgrounds = await Campground.find({});
     res.render('campgrounds/index', {campgrounds});
@@ -11,9 +13,14 @@ module.exports.renderNewForm = (req, res) => {
 }
 
 module.exports.createCampground = async(req, res, next) => {
+    const geoData = await geocoder.forwardGeocode({
+        query: req.body.campground.location,
+        limit: 1
+    }).send()
     //creating new campground with what user typed in form
     //must match input name attritbute in ejs file
     const campground = new Campground(req.body.campground);
+    campground.geometry = geoData.body.features[0].geometry;
     //map over array in req.files (from multer), take object and put in array, then put into campground
     campground.images = req.files.map(f => ({url: f.path, filename: f.filename}));
     //associate post with user
