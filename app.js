@@ -21,6 +21,7 @@ const methodOverride = require('method-override');
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const User = require('./models/user');
+const mongoSanitize = require('express-mongo-sanitize')
 
 //require routers
 const userRoutes = require('./routes/users');
@@ -67,6 +68,8 @@ app.use(flash());
 
 app.use(passport.initialize());
 app.use(passport.session());
+//prevent mongo injection (security)
+app.use(mongoSanitize());
 //use local strategy and authenticate
 passport.use(new LocalStrategy(User.authenticate()));
 //store user in session
